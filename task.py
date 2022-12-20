@@ -1,8 +1,17 @@
+import math
+
+def getDataBits(bits):
+    parityBitsCount = math.ceil(math.log(len(bits)+ 1, 2))
+
+    for i in range(parityBitsCount):
+        bits.pop(2**i-1 - i)
+    return bits
+
 while True:
-        bits = str(input("Введите 7 битов сообщения! Вводите осторожно:")).strip()
+        bits = str(input("Введите биты сообщения! Вводите осторожно:")).strip()
         failed = False
-        if len(bits) != 7:
-            print("Да не вводите вы столько символов, вводите 7!")
+        if len(bits) ==0:
+            print("Ну введите хоть что-нибудь!")
             failed = True
             continue
         
@@ -15,31 +24,20 @@ while True:
             continue
         print("Хорошие циферки - начинаю работу!")
 
-        s1, s2, s3 = 0, 0, 0
-        r1, r2, r3  = [int(bits[2**i - 1]) for i in range(3)]
-        i1, i2, i3, i4 = map(int, [bits[2], bits[4], bits[5], bits[6]])
+        parityBitsCount = math.ceil(math.log(len(bits)+ 1, 2))
 
-
-        s1 = (r1 + i1 + i2 + i4) % 2
-        s2 = (r2 + i1 + i3 + i4) % 2
-        s3 = (r3 + i2 + i3 + i4) % 2
-
-        syn = str(s1) + str(s2) + str(s3)
-
-        if syn == "000":
-            print("Сообщение дошло без ошибок! Ура, товарищи!. Декодировано: ", ''.join( map(str, [i1, i2, i3, i4])))
-        elif syn == "001":
-            print("Ошибка допущена в бите r3! Информационные биты в порядке: ", ''.join( map(str, [i1, i2, i3, i4])))
-        elif syn == "010":
-            print("Ошибка допущена в бите r2! Информационные биты в порядке: ", ''.join( map(str, [i1, i2, i3, i4])))
-        elif syn == "100":
-            print("Ошибка допущена в бите r1! Информационные биты в порядке: ", ''.join( map(str, [i1, i2, i3, i4])))
-        elif syn == "110":
-            print("Ошибка допущена в бите i1! Исправленное сообщение: ", ''.join( map(str, [int(not(i1)), i2, i3, i4])))
-        elif syn == "011":
-            print("Ошибка допущена в бите i3! Исправленное сообщение: ", ''.join( map(str, [i1, i2, int(not(i3)), i4])))
-        elif syn == "101":
-            print("Ошибка допущена в бите i2! Исправленное сообщение: ", ''.join( map(str, [i1, int(not(i2)), i3, i4])))
-        elif syn == "111":
-            print("Ошибка допущена в бите i4! Исправленное сообщение:", ''.join( map(str, [i1, i2, i3, int(not(i4))])))
-
+        bits = list(map(int, bits))
+        #Don't even ask where this comes from - my intuition!
+        syndromes = [str(sum( [sum(bits[2**i-1 + k*2**i*2:2**i-1 + k*2**i*2 + 2**i]) for
+         k in range(math.ceil(len(bits)/(2**i * 2)))] )%2) for i in range(parityBitsCount)]
+        if not '1' in syndromes:
+            print(f"Ошибок не обнаружено! Биты данных: {''.join(map(str, getDataBits()))}")
+        else:
+            errorBitIndex = int(''.join(syndromes[::-1]), 2) - 1
+            #Bit fixing
+            bits[errorBitIndex] = 1 - bits[errorBitIndex]
+            errorBitIndex+=1
+            if (errorBitIndex & errorBitIndex-1) == 0:
+                print(f"Ошибка в бите чётности r{int(math.log2(errorBitIndex) + 1)}! Испрвленные биты данных: {''.join(map(str, getDataBits(bits)))}")
+            else:
+                print(f"Ошибка в бите данных i{errorBitIndex - ( int(math.log2(errorBitIndex)) + 1)}! Испрвленные биты данных: {''.join(map(str, getDataBits(bits)))}")
